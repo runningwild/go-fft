@@ -6,8 +6,29 @@ import (
   "math"
   "cmath"
   "fft"
+  "fftw"
   "fmt"
 )
+
+func FFTWSpec(c gospec.Context) {
+  c.Specify("Check agains fftw", func() {
+    N := 8 * 3 * 7 * 13
+    in := make([]complex128, N)
+    out_fft := make([]complex128, N)
+    out_fftw := make([]complex128, N)
+    for i := range in {
+      in[i] = complex(float64(i / 1000 - 100), float64(i) / 10)
+    }
+
+    fftw.PlanDft1d(in, out_fftw, fftw.Forward, fftw.Estimate).Execute()
+    fft.FFT(in, out_fft, 0, 1)
+
+    for _,v := range out_fft {
+      c.Expect(real(v), IsWithin(1e-9), real(v))
+      c.Expect(imag(v), IsWithin(1e-9), imag(v))
+    }
+  })
+}
 
 func NaiveSpec(c gospec.Context) {
   in := make([]complex128, 8)
@@ -41,12 +62,19 @@ func NaiveSpec(c gospec.Context) {
   }
 
   c.Specify("Test basic FFT", func() {
+    in[3] = 3;
     out := make([]complex128, len(in))
     fft.FFT(in, out, 0, 1)
-      for i := range out {
-        fmt.Printf("oot %d: %2.2f\n", i, out[i])
-      }
-      fmt.Printf("\n\n")
+    for i := range out {
+      fmt.Printf("oot %d: %2.2f\n", i, out[i])
+    }
+    fmt.Printf("\n\n")
+
+    fft.DFT(in, out, 0, 1)
+    for i := range out {
+      fmt.Printf("oot %d: %2.2f\n", i, out[i])
+    }
+    fmt.Printf("\n\n")
   })
 
   c.Specify("Test basic DFT", func() {
