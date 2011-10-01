@@ -6,7 +6,7 @@ import (
   "fft"
 )
 
-var N int = 1024*1024
+var N int = 1024*64
 
 func BenchmarkFFTW(b *testing.B) {
   in := fftw.Alloc1d(N)

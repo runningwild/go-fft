@@ -12,7 +12,7 @@ import (
 
 func FFTWSpec(c gospec.Context) {
   c.Specify("Check agains fftw", func() {
-    N := 8 * 3 * 7 * 13
+    N := 64 * 3 * 7 * 13
     in := make([]complex128, N)
     out_fft := make([]complex128, N)
     out_fftw := make([]complex128, N)
