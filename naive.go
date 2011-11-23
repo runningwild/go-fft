@@ -13,14 +13,14 @@ const J = complex(0.0, 1.0)
 func DFT(in,out []complex128, start,stride int) {
   N := len(in) / stride
   if N == 1 {
-    out[0] = in[start]
+    out[start] = in[start]
     return
   }
   factor := -2 * math.Pi * complex(0,1) / complex(float64(N),0)
   for k := 0; k < N; k++ {
-    out[k] = 0
+    out[start + k*stride] = 0
     for n := start; n < len(in); n += stride {
-      out[k] += in[n] * cmath.Exp(factor * complex(float64(k * (n / stride)), 0))
+      out[start + k*stride] += in[n] * cmath.Exp(factor * complex(float64(k * (n / stride)), 0))
     }
   }
 }
