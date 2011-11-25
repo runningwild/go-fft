@@ -12,7 +12,7 @@ import (
 
 func FFTWSpec(c gospec.Context) {
   c.Specify("Check agains fftw", func() {
-    N := 64 * 3 * 7 * 13
+    N := 8
     in := make([]complex128, N)
     out_fft := make([]complex128, N)
     out_fftw := make([]complex128, N)
@@ -21,11 +21,11 @@ func FFTWSpec(c gospec.Context) {
     }
 
     fftw.PlanDft1d(in, out_fftw, fftw.Forward, fftw.Estimate).Execute()
-    fft.FFT(in, out_fft, 0, 1)
+    fft.FFT(in, out_fft)
 
-    for _,v := range out_fft {
-      c.Expect(real(v), IsWithin(1e-9), real(v))
-      c.Expect(imag(v), IsWithin(1e-9), imag(v))
+    for i := range out_fft {
+      c.Expect(real(out_fft[i]), IsWithin(1e-9), real(out_fftw[i]))
+      c.Expect(imag(out_fft[i]), IsWithin(1e-9), imag(out_fftw[i]))
     }
   })
 }
@@ -35,16 +35,12 @@ func NaiveSpec(c gospec.Context) {
   for i := range in {
     in[i] = complex(math.Cos(float64(i) / float64(len(in)) * 2 * math.Pi), 0)
   }
-  verify := func(out []complex128, name string) {
+  verify := func(out []complex128, start,stride int, name string) {
     c.Specify(name, func() {
-//      fmt.Printf("name: %s\n", name)
-//      for i := range out {
-//        fmt.Printf("oot %d: %2.2f\n", i, out[i])
-//      }
-      for i := range out {
+      for i := start; i < len(out); i += stride {
         mag,ang := cmath.Polar(out[i])
-        if i == 1 || i == len(out) - 1 {
-          c.Expect(mag, IsWithin(1e-9), float64(len(out))/2)
+        if i == start + stride || i == len(out) + start - stride {
+          c.Expect(mag, IsWithin(1e-9), float64(len(out) / stride)/2)
           if real(out[i]) < 0 {
             if ang < 0 {
               c.Expect(ang, IsWithin(1e-9), -math.Pi)
@@ -61,46 +57,32 @@ func NaiveSpec(c gospec.Context) {
     })
   }
 
-  c.Specify("Test basic FFT", func() {
-    in[3] = 3;
-    out := make([]complex128, len(in))
-    fft.FFT(in, out, 0, 1)
-    for i := range out {
-      fmt.Printf("oot %d: %2.2f\n", i, out[i])
-    }
-    fmt.Printf("\n\n")
-
-    fft.DFT(in, out, 0, 1)
-    for i := range out {
-      fmt.Printf("oot %d: %2.2f\n", i, out[i])
-    }
-    fmt.Printf("\n\n")
-  })
-
   c.Specify("Test basic DFT", func() {
     out := make([]complex128, len(in))
 
     fft.DFT(in, out, 0, 1)
-    verify(out, "Start/Stride 0/1")
+    verify(out, 0, 1, "Start/Stride 0/1")
 
     in2 := make([]complex128, 2*len(in))
+    out2 := make([]complex128, 2*len(in))
     for i := range in2 {
       in2[i] = in[i/2]
     }
-    fft.DFT(in2, out, 0, 2)
-    verify(out, "Start/Stride 0/2")
+    fft.DFT(in2, out2, 0, 2)
+    verify(out2, 0, 2, "Start/Stride 0/2")
 
 
-    fft.DFT(in2, out, 1, 2)
-    verify(out, "Start/Stride 1/2")
+    fft.DFT(in2, out2, 1, 2)
+    verify(out2, 1, 2, "Start/Stride 1/2")
 
-    in5 := make([]complex128, len(in)*5)
+    in5 := make([]complex128, 5*len(in))
+    out5 := make([]complex128, 5*len(in))
     for i := range in5 {
       in5[i] = in[i/5]
     }
     for i := 0; i < 5; i++ {
-      fft.DFT(in5, out, i, 5)
-      verify(out, fmt.Sprintf("Start/Stride %d/%d", i, len(in5)/len(in)))
+      fft.DFT(in5, out5, i, 5)
+      verify(out5, i, 5, fmt.Sprintf("Start/Stride %d/%d", i, len(in5)/len(in)))
     }
   })
 }

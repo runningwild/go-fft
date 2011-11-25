@@ -3,8 +3,11 @@ package fft
 import (
   "math"
   "cmath"
+  "fmt"
 )
-
+func init() {
+  fmt.Printf("")
+}
 const J = complex(0.0, 1.0)
 
 // Performs a DFT or a partial DFT on in, storing the output in out
@@ -48,38 +51,67 @@ func init() {
   }
 }
 
-func FFT(in,out []complex128, start,stride int) {
-  N := len(in) / stride
-  if N == 1 {
-    out[0] = in[start]
-    return
+func twiddle(f, N int) complex128 {
+  d := -2 * math.Pi * J * complex(float64(f), 0) / complex(float64(N),0)
+  m := cmath.Exp(d)
+  return m
+}
+
+func butterfly(in,out []complex128, q, start, stride int) {
+  // len(v) == p*q
+  // TODO: this needs to be able to stride
+  // start = 1, stride = 2
+  //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19
+  //     *     *     *     *     *     *     *     *     *     *
+  // q = 5
+  // p = 2
+  // start + stride * (i + j*p)
+  p := len(in) / q / stride
+  fmt.Printf("start stride p q : %d %d %d %d\n", start, stride, p, q)
+  for i := 0; i < p; i++ {
+    for j := 0; j < q; j++ {
+      out[start + stride * (i + j*p)] = 0
+      for k := 0; k < q; k++ {
+        fmt.Printf("%d %d\n", k * (i + j*p / stride), len(in) / stride)
+        out[start + stride * (i + j*p)] += in[start + stride * (i*q + k)] * twiddle((k * (i + j*p)), len(in) / stride)
+      }
+    }
   }
-  if N % 2 != 0 {
+  fmt.Printf("%d %d\n", len(in), q * (p + p*q))
+}
+
+func factor(n int) []int {
+  var f []int
+  for i := 2; i*i <= n; i++ {
+    for n%i == 0 {
+      f = append(f, i)
+      n /= i
+      if n == 1 { return f }
+    }
+  }
+  if n > 1 {
+    f = append(f, n)
+  }
+  return f
+}
+
+func fftHelper(in,out,temp []complex128, factors []int, start,stride int) {
+  if len(factors) == 1 {
     DFT(in, out, start, stride)
     return
   }
-  FFT(in, out[ : N/2], start, stride*2)
-  FFT(in, out[N/2 : ], start+stride, stride*2)
-
-  var factor complex128
-  if N < num_n_factors {
-    factor = n_factors[N]
-  } else {
-    factor = -2 * math.Pi * J * complex(1.0 / float64(N), 0.0)
+  factor := factors[0]
+  factors = factors[1:]
+  for i := 0; i < factor; i++ {
+//    sft_helper(in, out, factors, stride*factor)
+    fftHelper(in, out, temp, factors, i, stride*factor)
   }
+  copy(temp, out)
 
-  var knfactor complex128
-  for k := 0; k < N/2; k ++ {
-    t := out[k]
+  butterfly(temp, out, factor, start, stride)
+}
 
-    if N < num_kn_factors {
-      knfactor = kn_factors[k][N]
-    } else {
-      knfactor = cmath.Exp(factor * complex(float64(k), 0.0))
-    }
-    term := knfactor * out[k + N/2]
-    out[k]     = t + term
-    out[k+N/2] = t - term
-  }
-  return
+func FFT(in,out []complex128) {
+  temp := make([]complex128, len(in))
+  fftHelper(in, out, temp, factor(len(in)), 0, 1)
 }
