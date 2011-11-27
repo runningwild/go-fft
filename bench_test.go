@@ -6,7 +6,7 @@ import (
   "fft"
 )
 
-var N int = 32*2*2
+var N int = 32*2*2*2*2
 
 func BenchmarkFFTW(b *testing.B) {
   in := fftw.Alloc1d(N)

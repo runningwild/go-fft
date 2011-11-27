@@ -67,17 +67,14 @@ func butterfly(in,out []complex128, q, start, stride int) {
   // p = 2
   // start + stride * (i + j*p)
   p := len(in) / q / stride
-  fmt.Printf("start stride p q : %d %d %d %d\n", start, stride, p, q)
   for i := 0; i < p; i++ {
     for j := 0; j < q; j++ {
       out[start + stride * (i + j*p)] = 0
       for k := 0; k < q; k++ {
-        fmt.Printf("%d %d\n", k * (i + j*p / stride), len(in) / stride)
         out[start + stride * (i + j*p)] += in[start + stride * (i*q + k)] * twiddle((k * (i + j*p)), len(in) / stride)
       }
     }
   }
-  fmt.Printf("%d %d\n", len(in), q * (p + p*q))
 }
 
 func factor(n int) []int {
@@ -104,7 +101,7 @@ func fftHelper(in,out,temp []complex128, factors []int, start,stride int) {
   factors = factors[1:]
   for i := 0; i < factor; i++ {
 //    sft_helper(in, out, factors, stride*factor)
-    fftHelper(in, out, temp, factors, i, stride*factor)
+    fftHelper(in, out, temp, factors, start + stride*i, stride*factor)
   }
   copy(temp, out)
 
