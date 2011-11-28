@@ -4,7 +4,7 @@ import (
   . "gospec"
   "gospec"
   "math"
-  "cmath"
+  "math/cmplx"
   "fft"
   "fftw"
   "fmt"
@@ -12,7 +12,7 @@ import (
 
 func FFTWSpec(c gospec.Context) {
   c.Specify("Check agains fftw", func() {
-    N := 2*3*5*7*11
+    N := 2*3*5*7*11 
     in := make([]complex128, N)
     out_fft := make([]complex128, N)
     out_fftw := make([]complex128, N)
@@ -23,9 +23,10 @@ func FFTWSpec(c gospec.Context) {
     fftw.PlanDft1d(in, out_fftw, fftw.Forward, fftw.Estimate).Execute()
     fft.FFT(in, out_fft)
 
+    tolerance := 1e-5
     for i := range out_fft {
-      c.Expect(real(out_fft[i]), IsWithin(1e-9), real(out_fftw[i]))
-      c.Expect(imag(out_fft[i]), IsWithin(1e-9), imag(out_fftw[i]))
+      c.Expect(real(out_fft[i]), IsWithin(tolerance), real(out_fftw[i]))
+      c.Expect(imag(out_fft[i]), IsWithin(tolerance), imag(out_fftw[i]))
     }
   })
 }
@@ -38,7 +39,7 @@ func NaiveSpec(c gospec.Context) {
   verify := func(out []complex128, start,stride int, name string) {
     c.Specify(name, func() {
       for i := start; i < len(out); i += stride {
-        mag,ang := cmath.Polar(out[i])
+        mag,ang := cmplx.Polar(out[i])
         if i == start + stride || i == len(out) + start - stride {
           c.Expect(mag, IsWithin(1e-9), float64(len(out) / stride)/2)
           if real(out[i]) < 0 {

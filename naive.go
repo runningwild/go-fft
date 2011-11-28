@@ -2,7 +2,7 @@ package fft
 
 import (
   "math"
-  "cmath"
+  "math/cmplx"
   "fmt"
 )
 func init() {
@@ -23,7 +23,7 @@ func DFT(in,out []complex128, start,stride int) {
   for k := 0; k < N; k++ {
     out[start + k*stride] = 0
     for n := start; n < len(in); n += stride {
-      out[start + k*stride] += in[n] * cmath.Exp(factor * complex(float64(k * (n / stride)), 0))
+      out[start + k*stride] += in[n] * cmplx.Exp(factor * complex(float64(k * (n / stride)), 0))
     }
   }
 }
@@ -46,14 +46,14 @@ func init() {
   for i := range kn_factors {
     for j := range kn_factors {
       kfactor := n_factors[j] * complex(float64(i), 0.0)
-      kn_factors[i][j] = cmath.Exp(kfactor)
+      kn_factors[i][j] = cmplx.Exp(kfactor)
     }
   }
 }
 
 func twiddle(f, N int) complex128 {
   d := -2 * math.Pi * J * complex(float64(f), 0) / complex(float64(N),0)
-  m := cmath.Exp(d)
+  m := cmplx.Exp(d)
   return m
 }
 
@@ -108,7 +108,6 @@ func (p *Plan) String() string {
 // select some combination of factors and recurse
 // returns min cost factors as a heap, min cost
 func Plan_sub(n int, v []int) (*Plan,int64) {
-  fmt.Printf("plan(%d): %v\n", n, v)
   if len(v) == 1 {
     // TODO: decide whether we should really use v[0]*v[0] as the cost here, 
     // certainly not once we start using blustein
@@ -146,16 +145,15 @@ func Plan_sub(n int, v []int) (*Plan,int64) {
 }
 
 
-func fftHelper(in,out,temp []complex128, factors []int, start,stride int) {
-  if len(factors) == 1 {
+func fftHelper(in,out,temp []complex128, plan *Plan, start,stride int) {
+  if plan.left == nil {
     DFT(in, out, start, stride)
     return
   }
-  factor := factors[0]
-  factors = factors[1:]
+  factor := plan.right.n
   for i := 0; i < factor; i++ {
 //    sft_helper(in, out, factors, stride*factor)
-    fftHelper(in, out, temp, factors, start + stride*i, stride*factor)
+    fftHelper(in, out, temp, plan.left, start + stride*i, stride*factor)
   }
   copy(temp, out)
 
@@ -164,5 +162,6 @@ func fftHelper(in,out,temp []complex128, factors []int, start,stride int) {
 
 func FFT(in,out []complex128) {
   temp := make([]complex128, len(in))
-  fftHelper(in, out, temp, factor(len(in)), 0, 1)
+  plan,_ := Plan_sub(len(in), factor(len(in)))
+  fftHelper(in, out, temp, plan, 0, 1)
 }
