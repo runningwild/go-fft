@@ -92,6 +92,60 @@ func factor(n int) []int {
   return f
 }
 
+type Plan struct {
+  n int
+  left,right *Plan
+}
+
+func (p *Plan) String() string {
+  if p.left == nil && p.right == nil {
+    return fmt.Sprintf("%d", p.n)
+  }
+  return fmt.Sprintf("%d {%v} {%v}", p.n, p.left, p.right)
+}
+
+// minimize pq(p+q)
+// select some combination of factors and recurse
+// returns min cost factors as a heap, min cost
+func Plan_sub(n int, v []int) (*Plan,int64) {
+  fmt.Printf("plan(%d): %v\n", n, v)
+  if len(v) == 1 {
+    // TODO: decide whether we should really use v[0]*v[0] as the cost here, 
+    // certainly not once we start using blustein
+    return &Plan{ n : v[0]}, int64(v[0]*v[0])
+  }
+  if len(v) == 2 {
+    return &Plan{ n, &Plan{ n : v[0] }, &Plan{ n : v[1] } }, int64(v[0]*v[1] * (v[0] + v[1]))
+  }
+  var a,b []int
+  var best int64
+  var best_plan *Plan
+  for i := 1; i < 1<<uint(len(v)) - 1; i++ {
+    a = a[0:0]
+    b = b[0:0]
+    var p int64 = 1
+    for j := 0; j < len(v); j++ {
+      if i & (1 << uint(j)) != 0 {
+        a = append(a, v[j])
+        p *= int64(v[j])
+      } else {
+        b = append(b, v[j])
+      }
+    }
+    q := int64(n)/p
+    f1s,cost1 := Plan_sub(int(p), a)
+    f2s,cost2 := Plan_sub(int(q), b)
+    total := q*p*(q+p) + cost1 + cost2
+
+    if i == 1 || total < best {
+      best = total
+      best_plan = &Plan{ n, f1s, f2s }
+    }
+  }
+  return best_plan, best
+}
+
+
 func fftHelper(in,out,temp []complex128, factors []int, start,stride int) {
   if len(factors) == 1 {
     DFT(in, out, start, stride)

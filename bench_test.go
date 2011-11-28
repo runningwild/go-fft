@@ -6,7 +6,7 @@ import (
   "fft"
 )
 
-var N int = 32*2*2*2*2
+var N int = 2*3*5*7*11
 
 func BenchmarkFFTW(b *testing.B) {
   in := fftw.Alloc1d(N)
@@ -17,7 +17,7 @@ func BenchmarkFFTW(b *testing.B) {
   }
 }
 
-func BenchmarkFFT(b *testing.B) {
+func BenchmarkFFTG(b *testing.B) {
   in := make([]complex128, N)
   out := make([]complex128, N)
   for i := 0; i < b.N; i++ {
